@@ -44,6 +44,11 @@ func _physics_process(delta):
 			else:
 				velocity.x = speed
 			position.x += velocity.x / 10
+		else:
+			if flipped:
+				velocity.x = speed
+			else:
+				velocity.x = -speed
 
 func _ready():
 	pass
@@ -55,6 +60,10 @@ func _on_AnimatedSprite_animation_finished():
 
 
 func _on_Crab_damage(d):
-	print("here")
 	health -= d
 	iframes = invunln_time
+
+
+func _on_Area2D_body_entered(body):
+	if body.is_in_group("player"):
+		body.emit_signal("damage", position, 500)

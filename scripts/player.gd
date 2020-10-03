@@ -12,7 +12,12 @@ export (int) var invuln_time = 20
 export (PackedScene) var bullet_scene
 export (float) var shot_speed = 800
 export var inputs = []
+var input_lookup
 
+signal damage(_position, _power)
+signal set_shadow(_inputs, _transform, _bullet_scene)
+
+export var is_shadow = false
 var shot_timer = 0
 var jumps = 0
 var coyote_timer = 0
@@ -22,48 +27,90 @@ var iframes = 0
 var current_anim = ""
 var velocity = Vector2()
 var muzzle_offset
+var alive = true
+var frame = 0
+
+func _ready():
+	input_lookup = {
+		"left": 0,
+		"right": 1,
+		"jump": 2,
+		"shoot": 3
+	}
+	
+func _init():
+	inputs = []
+
+func animate(arg):
+	if is_shadow:
+		arg += "_shadow"
+	$AnimatedSprite.play(arg)
 
 func probe_check():
 	var space_state = get_world_2d().direct_space_state
 	var probe = self.position + Vector2.DOWN * 60
 	var ground = space_state.intersect_ray(self.position, probe, [self])
 	is_grounded = len(ground) != 0
+	
+func handle_input():
+	if is_shadow:
+		pass
+	else:
+		var input = [
+			Input.is_action_pressed("left"),
+			Input.is_action_pressed("right"),
+			Input.is_action_pressed("jump"),
+			Input.is_action_pressed("shoot"),
+		]
+		inputs.append(input)
+	
+func input(name, just_pressed = false):
+	if frame > len(inputs) - 1:
+		return false
+	var input = inputs[frame]
+	var value = input[input_lookup[name]]
+	var last_value = false
+	if just_pressed and frame > 0:
+		last_value = inputs[frame-1][input_lookup[name]]
+	return value and not last_value
 
 func handle_animation():
 	if current_anim == "":
 		if is_grounded:
 			if velocity.x == 0:
-				if Input.is_action_pressed("shoot"):
-					$AnimatedSprite.play("shoot")
+				if input("shoot"):
+					animate("shoot")
 				else:
-					$AnimatedSprite.play("idle")
+					animate("idle")
 			else:
-				if Input.is_action_pressed("shoot"):
-					$AnimatedSprite.play("run_shoot")
+				if input("shoot"):
+					animate("run_shoot")
 				else:
-					$AnimatedSprite.play("run")
+					animate("run")
 		else:
 			if iframes == 0:
-				$AnimatedSprite.play("jump")
+				animate("jump")
 			else:
-				$AnimatedSprite.play("damage")
+				animate("damage")
 	else:
 		pass
 	$AnimatedSprite.set_flip_h(facing)
 
 func shoot_blaster():
 	var bullet = bullet_scene.instance()
-	owner.add_child(bullet)
+	get_parent().add_child(bullet)
 	bullet.velocity.x = shot_speed
 	if facing:
 		bullet.velocity = -bullet.velocity
 	bullet.velocity.x += velocity.x
+	bullet.is_shadow = is_shadow
 	#bullet.position = position
 	if facing:
 		$Muzzle.position.x = -muzzle_offset
 	else:
 		$Muzzle.position.x = muzzle_offset
 	bullet.position = $Muzzle.global_position
+	bullet.emit_signal("setup", bullet.position, bullet.velocity, is_shadow)
 
 func fire_control():
 	if $Muzzle.position.x > 0:
@@ -71,20 +118,20 @@ func fire_control():
 	if shot_timer > 0:
 		shot_timer -= 1
 	else:
-		if Input.is_action_pressed("shoot"):
+		if input("shoot"):
 			shoot_blaster()
 			shot_timer = shot_cooldown
 
-func get_input():
-	if Input.is_action_pressed('right'):
+func handle_movement():
+	if input('right'):
 		velocity.x = speed
 		facing = false
-	elif Input.is_action_pressed('left'):
+	elif input('left'):
 		velocity.x = -speed
 		facing = true
 	else:
 		velocity.x = 0
-	if Input.is_action_pressed("jump"):
+	if input("jump"):
 		velocity.y += gravity * gravity_mult
 	else:
 		velocity.y += gravity
@@ -99,14 +146,34 @@ func get_input():
 			pass
 		else:
 			pass
-	if Input.is_action_just_pressed("jump") and (jumps > 0 or coyote_timer > 0):
+	if input("jump", true) and (jumps > 0 or coyote_timer > 0):
 		if coyote_timer == 0:
 			jumps -= 1
 		velocity.y = -jump_power
 
 func _physics_process(delta):
-	probe_check()
-	get_input()
-	fire_control()
-	velocity = move_and_slide(velocity)
-	handle_animation()
+	if alive:
+		handle_input()
+		probe_check()
+		handle_movement()
+		fire_control()
+		velocity = move_and_slide(velocity)
+		handle_animation()
+		frame += 1
+	else:
+		velocity = move_and_slide(velocity)
+
+
+func _on_Player_damage(_position, _power):
+	alive = false
+	animate("damage")
+	velocity = position - _position
+	velocity = velocity.normalized() * _power
+
+
+func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
+	is_shadow = true
+	inputs = _inputs
+	transform = _transform
+	bullet_scene = _bullet_scene
+	collision_layer = 2
