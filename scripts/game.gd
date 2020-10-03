@@ -4,6 +4,7 @@ export var sectors = []
 var replays = []
 var sector_name = ""
 var sector
+var spawn_transform
 
 func reload():
 	var player = sector.get_node("Player")
@@ -17,7 +18,7 @@ func reload():
 	
 	for r in replays:
 		var shadow = player.duplicate()
-		shadow.emit_signal("set_shadow", r, player.transform, player.bullet_scene)
+		shadow.emit_signal("set_shadow", r, spawn_transform, player.bullet_scene)
 		sector.add_child(shadow)
 	
 func reset():
@@ -42,3 +43,4 @@ func _ready():
 		sector = next_level_resource.instance()
 		add_child(sector)
 		var player = sector.get_node("Player")
+		spawn_transform = player.transform
