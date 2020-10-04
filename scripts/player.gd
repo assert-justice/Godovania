@@ -37,6 +37,7 @@ func _ready():
 		"jump": 2,
 		"shoot": 3
 	}
+	muzzle_offset = $Muzzle.position.x
 	
 func _init():
 	inputs = []
@@ -113,8 +114,6 @@ func shoot_blaster():
 	bullet.emit_signal("setup", bullet.position, bullet.velocity, is_shadow)
 
 func fire_control():
-	if $Muzzle.position.x > 0:
-		muzzle_offset = $Muzzle.position.x
 	if shot_timer > 0:
 		shot_timer -= 1
 	else:

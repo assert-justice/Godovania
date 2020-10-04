@@ -1,6 +1,7 @@
 extends Node2D
 
 export var sectors = []
+export var current_sector = 0
 var replays = []
 var sector_name = ""
 var sector
@@ -35,12 +36,15 @@ func _process(_delta):
 		reload()
 	elif Input.is_action_just_pressed("reset"):
 		reset()
-
-func _ready():
-	if len(sectors) > 0:
-		sector_name = sectors[0]
+		
+func load_sector():
+	if current_sector < len(sectors):
+		sector_name = sectors[current_sector]
 		var next_level_resource = load(sector_name)
 		sector = next_level_resource.instance()
 		add_child(sector)
 		var player = sector.get_node("Player")
 		spawn_transform = player.transform
+
+func _ready():
+	load_sector()

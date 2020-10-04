@@ -11,3 +11,4 @@ func _ready():
 func _physics_process(delta):
 	position.x = player.position.x
 	position.x = clamp(position.x, min_x, max_x)
+	#position.y = player.position.y
