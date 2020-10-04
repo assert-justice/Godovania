@@ -5,3 +5,7 @@
 [node name="Game" type="Node2D"]
 script = ExtResource( 2 )
 sectors = [ "res://Sector1.tscn", "res://Sector2.tscn", "res://Sector3.tscn", "res://Sector4.tscn", "res://Sector5.tscn" ]
+[connection signal="load_scene" from="." to="." method="_on_Game_load_scene"]
+[connection signal="next_scene" from="." to="." method="_on_Game_next_scene"]
+[connection signal="reload_scene" from="." to="." method="_on_Game_reload_scene"]
+[connection signal="reset_scene" from="." to="." method="_on_Game_reset_scene"]

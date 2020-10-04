@@ -12,10 +12,15 @@ export (int) var invuln_time = 20
 export (PackedScene) var bullet_scene
 export (float) var shot_speed = 800
 export var inputs = []
+export var paradox_window = 5
+export (PackedScene) var paradox_scene
+export var time_to_reload = 120
+var reload_time = 0
 var input_lookup
 
 signal damage(_position, _power)
 signal set_shadow(_inputs, _transform, _bullet_scene)
+signal paradox
 
 export var is_shadow = false
 var shot_timer = 0
@@ -38,7 +43,7 @@ func _ready():
 		"shoot": 3
 	}
 	muzzle_offset = $Muzzle.position.x
-	
+
 func _init():
 	inputs = []
 
@@ -52,7 +57,7 @@ func probe_check():
 	var probe = self.position + Vector2.DOWN * 60
 	var ground = space_state.intersect_ray(self.position, probe, [self])
 	is_grounded = len(ground) != 0
-	
+
 func handle_input():
 	if is_shadow:
 		pass
@@ -64,7 +69,7 @@ func handle_input():
 			Input.is_action_pressed("shoot"),
 		]
 		inputs.append(input)
-	
+
 func input(name, just_pressed = false):
 	if frame > len(inputs) - 1:
 		return false
@@ -161,16 +166,40 @@ func _physics_process(delta):
 		frame += 1
 	else:
 		move_and_slide(velocity)
+		if not is_shadow:
+			reload_time -= 1
+			if reload_time < 0:
+				reload()
+	if is_shadow and alive:
+		if frame > len(inputs) + paradox_window:
+			spawn_paradox()
+	if is_shadow and not alive:
+		if frame < len(inputs) - paradox_window:
+			spawn_paradox()
+	if Input.is_action_just_pressed("reload"):
+		reload()
+	elif Input.is_action_just_pressed("reset"):
+		reset()
 
+func spawn_paradox():
+	queue_free()
+	var paradox = paradox_scene.instance()
+	get_parent().add_child(paradox)
+	paradox.position = position
+
+func reload():
+	get_tree().get_root().get_child(0).emit_signal("reload_scene")
+
+func reset():
+	get_tree().get_root().get_child(0).emit_signal("reset_scene")
 
 func _on_Player_damage(_position, _power):
 	alive = false
+	reload_time = time_to_reload
 	animate("damage")
 	velocity = position - _position
 	velocity = velocity.normalized() * _power
 	velocity.y += gravity
-	print(velocity.y)
-
 
 func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
 	is_shadow = true
@@ -178,3 +207,7 @@ func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
 	transform = _transform
 	bullet_scene = _bullet_scene
 	collision_layer = 2
+
+
+func _on_Player_paradox():
+	reset()

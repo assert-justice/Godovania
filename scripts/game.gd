@@ -7,6 +7,11 @@ var sector_name = ""
 var sector
 var spawn_transform
 
+signal next_scene
+signal load_scene(index)
+signal reload_scene
+signal reset_scene
+
 func reload():
 	var player = sector.get_node("Player")
 	replays.append(player.inputs.duplicate())
@@ -30,13 +35,13 @@ func reset():
 	sector = next_level_resource.instance()
 	add_child(sector)
 	replays = []
-	
-func _process(_delta):
-	if Input.is_action_just_pressed("reload"):
-		reload()
-	elif Input.is_action_just_pressed("reset"):
-		reset()
-		
+
+#func _process(_delta):
+#	if Input.is_action_just_pressed("reload"):
+#		reload()
+#	elif Input.is_action_just_pressed("reset"):
+#		reset()
+
 func load_sector():
 	if current_sector < len(sectors):
 		sector_name = sectors[current_sector]
@@ -48,3 +53,19 @@ func load_sector():
 
 func _ready():
 	load_sector()
+
+func _on_Game_load_scene(index):
+	if index > 0 and index < len(sectors):
+		current_sector = index
+		load_sector()
+
+func _on_Game_next_scene():
+	if current_sector < len(sectors) - 1:
+		current_sector += 1
+		load_sector()
+
+func _on_Game_reload_scene():
+	reload()
+
+func _on_Game_reset_scene():
+	reset()
