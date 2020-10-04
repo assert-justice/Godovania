@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=8 format=2]
 
 [ext_resource path="res://Player.tscn" type="PackedScene" id=1]
 [ext_resource path="res://Sector0.tscn" type="PackedScene" id=2]
@@ -6,6 +6,7 @@
 [ext_resource path="res://Crab.tscn" type="PackedScene" id=4]
 [ext_resource path="res://sprites/environment/layers/background.png" type="Texture" id=5]
 [ext_resource path="res://sprites/environment/layers/middleground.png" type="Texture" id=6]
+[ext_resource path="res://Thwomp.tscn" type="PackedScene" id=7]
 
 [node name="Sector1" type="Node2D"]
 
@@ -51,3 +52,6 @@ stretch_mode = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="Thwomp" parent="." instance=ExtResource( 7 )]
+position = Vector2( 263.126, 74.0596 )

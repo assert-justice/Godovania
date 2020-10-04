@@ -161,7 +161,7 @@ func _physics_process(delta):
 		handle_animation()
 		frame += 1
 	else:
-		velocity = move_and_slide(velocity)
+		move_and_slide(velocity)
 
 
 func _on_Player_damage(_position, _power):
@@ -169,6 +169,8 @@ func _on_Player_damage(_position, _power):
 	animate("damage")
 	velocity = position - _position
 	velocity = velocity.normalized() * _power
+	velocity.y += gravity
+	print(velocity.y)
 
 
 func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
