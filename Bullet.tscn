@@ -41,33 +41,33 @@ region = Rect2( 36, 0, 12, 12 )
 
 [sub_resource type="AtlasTexture" id=8]
 flags = 4
-atlas = ExtResource( 4 )
-region = Rect2( 0, 0, 12, 12 )
+atlas = ExtResource( 5 )
+region = Rect2( 0, 0, 6, 4 )
 
 [sub_resource type="AtlasTexture" id=9]
 flags = 4
-atlas = ExtResource( 4 )
-region = Rect2( 12, 0, 12, 12 )
+atlas = ExtResource( 5 )
+region = Rect2( 6, 0, 6, 4 )
 
 [sub_resource type="AtlasTexture" id=10]
 flags = 4
 atlas = ExtResource( 4 )
-region = Rect2( 24, 0, 12, 12 )
+region = Rect2( 0, 0, 12, 12 )
 
 [sub_resource type="AtlasTexture" id=11]
 flags = 4
 atlas = ExtResource( 4 )
-region = Rect2( 36, 0, 12, 12 )
+region = Rect2( 12, 0, 12, 12 )
 
 [sub_resource type="AtlasTexture" id=12]
 flags = 4
-atlas = ExtResource( 5 )
-region = Rect2( 0, 0, 6, 4 )
+atlas = ExtResource( 4 )
+region = Rect2( 24, 0, 12, 12 )
 
 [sub_resource type="AtlasTexture" id=13]
 flags = 4
-atlas = ExtResource( 5 )
-region = Rect2( 6, 0, 6, 4 )
+atlas = ExtResource( 4 )
+region = Rect2( 36, 0, 12, 12 )
 
 [sub_resource type="SpriteFrames" id=14]
 animations = [ {
@@ -81,14 +81,14 @@ animations = [ {
 "name": "hit",
 "speed": 15.0
 }, {
-"frames": [ SubResource( 8 ), SubResource( 9 ), SubResource( 10 ), SubResource( 11 ) ],
-"loop": true,
-"name": "hit_shadow",
-"speed": 5.0
-}, {
-"frames": [ SubResource( 12 ), SubResource( 13 ) ],
+"frames": [ SubResource( 8 ), SubResource( 9 ) ],
 "loop": true,
 "name": "default_shadow",
+"speed": 5.0
+}, {
+"frames": [ SubResource( 10 ), SubResource( 11 ), SubResource( 12 ), SubResource( 13 ) ],
+"loop": true,
+"name": "hit_shadow",
 "speed": 5.0
 } ]
 

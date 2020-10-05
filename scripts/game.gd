@@ -11,6 +11,7 @@ signal next_scene
 signal load_scene(index)
 signal reload_scene
 signal reset_scene
+var next_level_resource
 
 func reload():
 	var player = sector.get_node("Player")
@@ -28,30 +29,25 @@ func reload():
 		sector.add_child(shadow)
 	
 func reset():
+	print("got here")
 	remove_child(sector)
 	sector.call_deferred("free")
-
-	var next_level_resource = load(sector_name)
 	sector = next_level_resource.instance()
 	add_child(sector)
 	replays = []
 
-#func _process(_delta):
-#	if Input.is_action_just_pressed("reload"):
-#		reload()
-#	elif Input.is_action_just_pressed("reset"):
-#		reset()
-
 func load_sector():
 	if current_sector < len(sectors):
 		sector_name = sectors[current_sector]
-		var next_level_resource = load(sector_name)
+		if (next_level_resource == null):
+			next_level_resource = load(sector_name)
 		sector = next_level_resource.instance()
 		add_child(sector)
 		var player = sector.get_node("Player")
 		spawn_transform = player.transform
 
 func _ready():
+	next_level_resource = load(sector_name)
 	load_sector()
 
 func _on_Game_load_scene(index):

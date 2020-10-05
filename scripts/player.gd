@@ -17,6 +17,7 @@ export (PackedScene) var paradox_scene
 export var time_to_reload = 120
 var reload_time = 0
 var input_lookup
+var has_paradox = false
 
 signal damage(_position, _power)
 signal set_shadow(_inputs, _transform, _bullet_scene)
@@ -165,6 +166,7 @@ func _physics_process(delta):
 		handle_animation()
 		frame += 1
 	else:
+		velocity.y += gravity
 		move_and_slide(velocity)
 		if not is_shadow:
 			reload_time -= 1
@@ -178,7 +180,7 @@ func _physics_process(delta):
 			spawn_paradox()
 	if Input.is_action_just_pressed("reload"):
 		reload()
-	elif Input.is_action_just_pressed("reset"):
+	elif Input.is_action_just_pressed("reset") or has_paradox:
 		reset()
 
 func spawn_paradox():
@@ -194,10 +196,12 @@ func reset():
 	get_tree().get_root().get_child(0).emit_signal("reset_scene")
 
 func _on_Player_damage(_position, _power):
+	if not alive:
+		return
 	alive = false
 	reload_time = time_to_reload
 	animate("damage")
-	velocity = position - _position
+	velocity = _position - position
 	velocity = velocity.normalized() * _power
 	velocity.y += gravity
 
@@ -208,6 +212,5 @@ func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
 	bullet_scene = _bullet_scene
 	collision_layer = 2
 
-
 func _on_Player_paradox():
-	reset()
+	has_paradox = true

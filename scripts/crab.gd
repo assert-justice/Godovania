@@ -29,6 +29,8 @@ func _physics_process(delta):
 	probe_check()
 	if health < 0:
 		$AnimatedSprite.play("death")
+		collision_layer = 0
+		$Area2D.collision_layer = 0
 	elif iframes > 0:
 		iframes -= 1
 		$AnimatedSprite.position = rand_vec() * 10
@@ -38,7 +40,7 @@ func _physics_process(delta):
 		$AnimatedSprite.set_flip_h(flipped)
 		flipped = velocity.x > 0
 		velocity = move_and_slide(velocity)
-		if not is_grounded:
+		if not is_grounded or velocity.x == 0:
 			if flipped:
 				velocity.x = -speed
 			else:
