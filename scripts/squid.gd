@@ -86,6 +86,7 @@ func fire_control():
 			fireball.position = position
 			fireball.velocity = (player.position - position).normalized() * shot_speed
 			burst_timer = burst_cooldown
+			$Shoot.play()
 		else:
 			burst_timer -= 1
 
@@ -101,7 +102,7 @@ func pick_direction():
 	velocity = dir * speed
 
 func _physics_process(delta):
-	if health < 0:
+	if health <= 0:
 		$AnimatedSprite.play("death")
 		collision_layer = 0
 	elif iframes > 0:
@@ -121,6 +122,11 @@ func _physics_process(delta):
 func _on_Squid_damage(d):
 	health -= d
 	iframes = invuln_time
+	if health == 0:
+		$Death.play()
+		player.emit_signal("win")
+	else:
+		$Damage.play()
 
 
 func _on_AnimatedSprite_animation_finished():

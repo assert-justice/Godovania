@@ -1,6 +1,6 @@
 extends KinematicBody2D
 
-export (float) var speed = 400
+export (float) var speed = 300
 export (float) var air_speed_mult = 1
 export (float) var jump_power = 1000
 export (float) var gravity = 100
@@ -15,13 +15,18 @@ export var inputs = []
 export var paradox_window = 5
 export (PackedScene) var paradox_scene
 export var time_to_reload = 120
+export var deadzone = 0.2
+export var facing_vec = Vector2()
 var reload_time = 0
 var input_lookup
 var has_paradox = false
+var paradox_time = 120
+var space_state
 
 signal damage(_position, _power)
 signal set_shadow(_inputs, _transform, _bullet_scene)
 signal paradox
+signal win
 
 export var is_shadow = false
 var shot_timer = 0
@@ -35,13 +40,27 @@ var velocity = Vector2()
 var muzzle_offset
 var alive = true
 var frame = 0
+var won = false
+var won_time = 60 * 5
+var use_mouse = false
+var last_mouse = Vector2()
 
 func _ready():
 	input_lookup = {
 		"left": 0,
 		"right": 1,
-		"jump": 2,
-		"shoot": 3
+		"up": 2,
+		"down": 3,
+		"aim_left": 4,
+		"aim_right": 5,
+		"aim_up": 6,
+		"aim_down": 7,
+		"jump": 8,
+		"shoot": 9,
+		"lx": 10,
+		"ly": 11,
+		"rx": 12,
+		"ry": 13
 	}
 	muzzle_offset = $Muzzle.position.x
 
@@ -53,21 +72,63 @@ func animate(arg):
 		arg += "_shadow"
 	$AnimatedSprite.play(arg)
 
+func raycast(pos0, pos1):
+	return space_state.intersect_ray(pos0 + position, pos1 + position, [self])
+
 func probe_check():
-	var space_state = get_world_2d().direct_space_state
-	var probe = self.position + Vector2.DOWN * 60
-	var ground = space_state.intersect_ray(self.position, probe, [self])
-	is_grounded = len(ground) != 0
+	space_state = get_world_2d().direct_space_state
+	var ground0 = raycast(Vector2.LEFT * 8, Vector2.LEFT * 8 + Vector2.DOWN * 60)
+	var ground1 = raycast(Vector2.RIGHT * 8, Vector2.RIGHT * 8 + Vector2.DOWN * 60)
+	is_grounded = len(ground0) > 0 or len(ground1) > 0
 
 func handle_input():
 	if is_shadow:
 		pass
 	else:
+#		var mouse = get_viewport().get_mouse_position() + owner.get_node("Camera2D").position
+#		mouse.x -= 256
+#		mouse.y -= 150
+#		if mouse != last_mouse:
+#			use_mouse = true
+		var left_joy = Vector2(Input.get_joy_axis(0, JOY_ANALOG_LX), Input.get_joy_axis(0, JOY_ANALOG_LY))
+		var right_joy = Vector2(Input.get_joy_axis(0, JOY_ANALOG_RX), Input.get_joy_axis(0, JOY_ANALOG_RY))
+		var mult = 1 / (1 - deadzone)
+		if left_joy.length() < deadzone:
+			left_joy = Vector2()
+		else:
+			left_joy = left_joy.normalized() * (left_joy.length() - deadzone) * mult
+		#left_joy *= 1 / (1 - deadzone)
+		if right_joy.length() < deadzone:
+			right_joy = Vector2()
+		else:
+			right_joy = right_joy.normalized() * (right_joy.length() - deadzone) * mult
+		#right_joy *= 1 / (1 - deadzone)
+		if left_joy.length() > 0 or right_joy.length() > 0:
+			use_mouse = false
+		if right_joy.length() > 0 and Input.is_action_just_pressed("shoot"):
+			print(facing_vec)
+#		if use_mouse:
+#			var vec = mouse - position * 2
+#			right_joy = vec.normalized()
+#			if Input.is_action_just_pressed("shoot"):
+#				print(position * 2)
+#				print(mouse)
+#				print(vec)
 		var input = [
 			Input.is_action_pressed("left"),
 			Input.is_action_pressed("right"),
+			Input.is_action_pressed("up"),
+			Input.is_action_pressed("down"),
+			Input.is_action_pressed("aim_left"),
+			Input.is_action_pressed("aim_right"),
+			Input.is_action_pressed("aim_up"),
+			Input.is_action_pressed("aim_down"),
 			Input.is_action_pressed("jump"),
 			Input.is_action_pressed("shoot"),
+			left_joy.x,
+			left_joy.y,
+			right_joy.x,
+			right_joy.y
 		]
 		inputs.append(input)
 
@@ -75,11 +136,18 @@ func input(name, just_pressed = false):
 	if frame > len(inputs) - 1:
 		return false
 	var input = inputs[frame]
+	if typeof(input) == TYPE_REAL:
+		return input
 	var value = input[input_lookup[name]]
 	var last_value = false
 	if just_pressed and frame > 0:
 		last_value = inputs[frame-1][input_lookup[name]]
 	return value and not last_value
+	
+func input_axis(name):
+	if frame > len(inputs) - 1:
+		return 0
+	return inputs[frame][input_lookup[name]]
 
 func handle_animation():
 	if current_anim == "":
@@ -94,6 +162,7 @@ func handle_animation():
 					animate("run_shoot")
 				else:
 					animate("run")
+					$AnimatedSprite.speed_scale = abs(velocity.x / speed)
 		else:
 			if iframes == 0:
 				animate("jump")
@@ -106,18 +175,19 @@ func handle_animation():
 func shoot_blaster():
 	var bullet = bullet_scene.instance()
 	get_parent().add_child(bullet)
-	bullet.velocity.x = shot_speed
-	if facing:
-		bullet.velocity = -bullet.velocity
-	bullet.velocity.x += velocity.x
-	bullet.is_shadow = is_shadow
-	#bullet.position = position
-	if facing:
-		$Muzzle.position.x = -muzzle_offset
+	var vel = Vector2(input_axis("rx"), input_axis("ry"))
+	if vel.length() > 0:
+		vel = vel.normalized()
 	else:
-		$Muzzle.position.x = muzzle_offset
-	bullet.position = $Muzzle.global_position
-	bullet.emit_signal("setup", bullet.position, bullet.velocity, is_shadow)
+		vel.x = 1
+		if facing:
+			vel.x = -1
+	vel *= shot_speed
+	bullet.is_shadow = is_shadow
+	bullet.get_node("AnimatedSprite").set_rotation(vel.angle())
+	$Muzzle.position = vel.normalized() * muzzle_offset
+	bullet.emit_signal("setup", $Muzzle.global_position, vel, is_shadow)
+	$Shoot.play()
 
 func fire_control():
 	if shot_timer > 0:
@@ -134,8 +204,18 @@ func handle_movement():
 	elif input('left'):
 		velocity.x = -speed
 		facing = true
+	elif abs(input_axis("lx")) > 0:
+		velocity.x = input_axis("lx") * speed
+		facing = velocity.x < 0
 	else:
 		velocity.x = 0
+	if abs(input_axis("rx")) > 0:
+		facing = input_axis("rx") < 0
+		facing_vec = Vector2(input_axis("rx"), input_axis("ry")).normalized()
+	else:
+		facing_vec = Vector2(1,0)
+		if facing:
+			facing_vec.x = -1
 	if input("jump"):
 		velocity.y += gravity * gravity_mult
 	else:
@@ -155,8 +235,14 @@ func handle_movement():
 		if coyote_timer == 0:
 			jumps -= 1
 		velocity.y = -jump_power
+		$Jump.play()
 
 func _physics_process(delta):
+#	if won:
+#		if won_time > 0:
+#			won_time -= 1
+#		else:
+#			reset()
 	if alive:
 		handle_input()
 		probe_check()
@@ -170,7 +256,7 @@ func _physics_process(delta):
 		move_and_slide(velocity)
 		if not is_shadow:
 			reload_time -= 1
-			if reload_time < 0:
+			if reload_time < 0 and not has_paradox:
 				reload()
 	if is_shadow and alive:
 		if frame > len(inputs) + paradox_window:
@@ -180,8 +266,13 @@ func _physics_process(delta):
 			spawn_paradox()
 	if Input.is_action_just_pressed("reload"):
 		reload()
-	elif Input.is_action_just_pressed("reset") or has_paradox:
+	elif Input.is_action_just_pressed("reset"):
 		reset()
+	elif has_paradox:
+		if paradox_time > 0:
+			paradox_time -= 1
+		else:
+			reset()
 
 func spawn_paradox():
 	queue_free()
@@ -196,8 +287,9 @@ func reset():
 	get_tree().get_root().get_child(0).emit_signal("reset_scene")
 
 func _on_Player_damage(_position, _power):
-	if not alive:
+	if not alive or won:
 		return
+	$Death.play()
 	alive = false
 	reload_time = time_to_reload
 	animate("damage")
@@ -214,3 +306,14 @@ func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
 
 func _on_Player_paradox():
 	has_paradox = true
+	alive = false
+	animate("damage")
+	velocity = Vector2()
+	$ParadoxLabel.visible = true
+	$Paradox.play()
+
+func _on_Player_win():
+	$Win.play()
+	won = true
+	var win_label = $WinLabel
+	win_label.visible = true

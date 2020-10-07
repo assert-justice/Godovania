@@ -27,7 +27,7 @@ func probe_check():
 
 func _physics_process(delta):
 	probe_check()
-	if health < 0:
+	if health <= 0:
 		$AnimatedSprite.play("death")
 		collision_layer = 0
 		$Area2D.collision_layer = 0
@@ -64,6 +64,9 @@ func _on_AnimatedSprite_animation_finished():
 func _on_Crab_damage(d):
 	health -= d
 	iframes = invunln_time
+	$Damage.play()
+	if health == 0:
+		$Death.play()
 
 
 func _on_Area2D_body_entered(body):

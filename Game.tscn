@@ -1,10 +1,14 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=3 format=2]
 
+[ext_resource path="res://music.ogg" type="AudioStream" id=1]
 [ext_resource path="res://scripts/game.gd" type="Script" id=2]
 
 [node name="Game" type="Node2D"]
 script = ExtResource( 2 )
 sectors = [ "res://Sector1.tscn", "res://Sector2.tscn", "res://Sector3.tscn", "res://Sector4.tscn", "res://Sector5.tscn" ]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 1 )
 [connection signal="load_scene" from="." to="." method="_on_Game_load_scene"]
 [connection signal="next_scene" from="." to="." method="_on_Game_next_scene"]
 [connection signal="reload_scene" from="." to="." method="_on_Game_reload_scene"]
