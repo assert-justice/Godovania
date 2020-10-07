@@ -1,4 +1,4 @@
-[gd_scene load_steps=94 format=2]
+[gd_scene load_steps=95 format=2]
 
 [ext_resource path="res://sprites/spritesheets/player/player-run.png" type="Texture" id=1]
 [ext_resource path="res://sprites/spritesheets/player/player-idle.png" type="Texture" id=2]
@@ -20,6 +20,7 @@
 [ext_resource path="res://sounds/Jump_00.wav" type="AudioStream" id=18]
 [ext_resource path="res://sounds/Jingle_Achievement_01.wav" type="AudioStream" id=19]
 [ext_resource path="res://sounds/Jingle_Lose_01.wav" type="AudioStream" id=20]
+[ext_resource path="res://scripts/camera.gd" type="Script" id=21]
 
 [sub_resource type="AtlasTexture" id=1]
 flags = 4
@@ -506,6 +507,12 @@ __meta__ = {
 
 [node name="Paradox" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource( 20 )
+
+[node name="Camera2D" type="Camera2D" parent="."]
+current = true
+zoom = Vector2( 0.65, 0.65 )
+smoothing_enabled = true
+script = ExtResource( 21 )
 [connection signal="damage" from="." to="." method="_on_Player_damage"]
 [connection signal="paradox" from="." to="." method="_on_Player_paradox"]
 [connection signal="set_shadow" from="." to="." method="_on_Player_set_shadow"]

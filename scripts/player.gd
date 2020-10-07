@@ -42,8 +42,8 @@ var alive = true
 var frame = 0
 var won = false
 var won_time = 60 * 5
-var use_mouse = false
-var last_mouse = Vector2()
+export var use_mouse = false
+export var last_mouse = Vector2()
 
 func _ready():
 	input_lookup = {
@@ -77,19 +77,19 @@ func raycast(pos0, pos1):
 
 func probe_check():
 	space_state = get_world_2d().direct_space_state
-	var ground0 = raycast(Vector2.LEFT * 8, Vector2.LEFT * 8 + Vector2.DOWN * 60)
-	var ground1 = raycast(Vector2.RIGHT * 8, Vector2.RIGHT * 8 + Vector2.DOWN * 60)
+	var ground0 = raycast(Vector2.LEFT * 20, Vector2.LEFT * 20 + Vector2.DOWN * 60)
+	var ground1 = raycast(Vector2.RIGHT * 20, Vector2.RIGHT * 20 + Vector2.DOWN * 60)
 	is_grounded = len(ground0) > 0 or len(ground1) > 0
 
 func handle_input():
 	if is_shadow:
 		pass
 	else:
-#		var mouse = get_viewport().get_mouse_position() + owner.get_node("Camera2D").position
-#		mouse.x -= 256
-#		mouse.y -= 150
-#		if mouse != last_mouse:
-#			use_mouse = true
+		var mouse = get_viewport().get_mouse_position() + $Camera2D.position / $Camera2D.zoom
+		mouse -= get_viewport_rect().size * 0.5 
+		if mouse != last_mouse:
+			use_mouse = true
+		last_mouse = mouse
 		var left_joy = Vector2(Input.get_joy_axis(0, JOY_ANALOG_LX), Input.get_joy_axis(0, JOY_ANALOG_LY))
 		var right_joy = Vector2(Input.get_joy_axis(0, JOY_ANALOG_RX), Input.get_joy_axis(0, JOY_ANALOG_RY))
 		var mult = 1 / (1 - deadzone)
@@ -97,23 +97,14 @@ func handle_input():
 			left_joy = Vector2()
 		else:
 			left_joy = left_joy.normalized() * (left_joy.length() - deadzone) * mult
-		#left_joy *= 1 / (1 - deadzone)
 		if right_joy.length() < deadzone:
 			right_joy = Vector2()
 		else:
 			right_joy = right_joy.normalized() * (right_joy.length() - deadzone) * mult
-		#right_joy *= 1 / (1 - deadzone)
 		if left_joy.length() > 0 or right_joy.length() > 0:
 			use_mouse = false
-		if right_joy.length() > 0 and Input.is_action_just_pressed("shoot"):
-			print(facing_vec)
-#		if use_mouse:
-#			var vec = mouse - position * 2
-#			right_joy = vec.normalized()
-#			if Input.is_action_just_pressed("shoot"):
-#				print(position * 2)
-#				print(mouse)
-#				print(vec)
+		if use_mouse:
+			right_joy = mouse.normalized()
 		var input = [
 			Input.is_action_pressed("left"),
 			Input.is_action_pressed("right"),
@@ -249,6 +240,7 @@ func _physics_process(delta):
 		handle_movement()
 		fire_control()
 		velocity = move_and_slide(velocity)
+		#velocity = move_and_slide_with_snap(velocity)
 		handle_animation()
 		frame += 1
 	else:
@@ -303,6 +295,7 @@ func _on_Player_set_shadow(_inputs, _transform, _bullet_scene):
 	transform = _transform
 	bullet_scene = _bullet_scene
 	collision_layer = 2
+	$Camera2D.current = false
 
 func _on_Player_paradox():
 	has_paradox = true
